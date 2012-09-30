@@ -23,96 +23,103 @@ public:
 	MarkerFinder() {
 	}
 	;
-	std::vector<cv::Vec2i> findDots(cv::Mat& image) {
+	std::vector<cv::Vec2i> findDots(cv::Mat& image, int radius = 200) {
 		dots.clear();
-		int minX, minY;
-		brightFinder(image, &minX, &minY);
-		if ((minX == 0) && (minY == 0)) {
-			;
-		}
-		else
-		{
-		cv::Vec2i np ;//= new cv::Vec2i();
-		np[0]=minX;np[1]=minY;
-		dots.push_back(np);
-		//brightFinder(image, minX, minY);
-		//dots.insert(100,100);
-//				cv::HoughLinesP(binary, lines, deltaRho, deltaTheta, minVote, minLength,
-//						maxGap);
-		}
+		int minX = 0, minY = 0;
+		do {
+			brightFinder(image, &minX, &minY);
+			if (minX != 0 && minY != 0) {
+				// Поищем нет ли рядом точеньки...
+				std::vector<cv::Vec2i>::const_iterator it2 = dots.begin();
+				bool found = false;
+				while (it2 != dots.end() && !found) {
+					if (((((*it2)[0] - minX) * ((*it2)[0] - minX))
+							+ ((minY - (*it2)[1]) * (minY - (*it2)[1])))
+							< radius)
+						found = true;
+					++it2;
+
+				}
+				if (!found) {
+					cv::Vec2i np;	//= new cv::Vec2i();
+					np[0] = minX;
+					np[1] = minY;
+					dots.push_back(np);
+				}
+				minX++;
+				minY++;
+			}
+
+		} while (minX != 0 && minY != 0);
+
 		return dots;
 	}
 	// Draw the detected lines on an image
-	void drawDetectedDots(cv::Mat &image,cv::Mat &target,
-			cv::Scalar color = cv::Scalar(128, 128, 255),int size=20) {
+	void drawDetectedDots(cv::Mat &image, cv::Mat &target, cv::Scalar color =
+			cv::Scalar(128, 128, 255), int size = 20) {
 		// Draw the lines
 		std::vector<cv::Vec2i>::const_iterator it2 = dots.begin();
 		int minX, minY;
 		while (it2 != dots.end()) {
-		 minX =(*it2)[0]; minY = (*it2)[1];
-		//brightFinder(image, &minX, &minY);
-		if ((minX == 0) && (minY == 0)) {
-			return;
-		}
-		//cout << "found";
-		cv::Point ptc(minX, minY);
-		cv::circle(target, ptc, size, color, 1, 8);
-		cv::Point pt1(minX - size, minY );
-		cv::Point pt2(minX + size, minY );
-		cv::line(target, pt1, pt2, color);
-		cv::Point pt3(minX , minY - size);
-		cv::Point pt4(minX , minY+ size );
-		cv::line(target, pt3, pt4, color);
-		++it2;
+			minX = (*it2)[0];
+			minY = (*it2)[1];
+			//brightFinder(image, &minX, &minY);
+			if ((minX == 0) && (minY == 0)) {
+				return;
+			}
+			//cout << "found";
+			cv::Point ptc(minX, minY);
+			cv::circle(target, ptc, size, color, 1, 8);
+			cv::Point pt1(minX - size, minY);
+			cv::Point pt2(minX + size, minY);
+			cv::line(target, pt1, pt2, color);
+			cv::Point pt3(minX, minY - size);
+			cv::Point pt4(minX, minY + size);
+			cv::line(target, pt3, pt4, color);
+			++it2;
 		}
 	}
 	//находим белое пятно
 	void brightFinder(cv::Mat &image, int* x, int* y) const {
-//		int height = image.rows;
-//		int width = image.cols;
-//		int step = 1;        //image->widthStep;
-//		int channels = image.channels();
-//		uchar *data = image.data;
-
 		//Ищем самое яркое пятно
-		int min = 255;
+		int min = 128;
 		int minX = 0;
 		int minY = 0;
 
-		int nl = image.rows; // number of lines
+		int nl = image.rows;	// number of lines
 		// total number of elements per line
 		int nc = image.cols * image.channels();
-		for (int j = 0; j < nl; j++) {
+		//cout<<image.channels();
+		if (*y == 0)
+			*y = nl / 4;
+		nl -= nl / 4;
+		if (*x == 0)
+			*x = nc / 4;
+		nc -= nc / 4;
+		for (int j = *y; j < nl; j++) {
 			// get the address of row j
 			uchar* data = image.ptr<uchar>(j);
-			for (int i = 0; i < nc; i++) {
+			for (int i = *x; i < nc; i++) {
 				// process each pixel ---------------------
-				if (data[i ] <= min) {
+				if (data[i] <= min) {
 					min = data[i];
 					minX = i;
 					minY = j;
+					j = nl;
+					i = nc;
 				}
-//				data[i] = data[i] / div * div + div / 2;
-				// end of pixel processing ----------------
 			}
 		}
 
-//		for (int i = 0; i < height; i++) {
-//			for (int j = 0; j < width; j++) {
-//				for (int k = 0; k < channels; k++) {
-//					if (data[i * step + j * channels + k] <= min) {
-//						min = data[i * step + j * channels + k];
-//						minX = j;
-//						minY = i;
-//					}
-//				}
-//			}
-//		}
-		if (nl<(minY+50)||nl<(minX+50)) {minX=0;minY=0;}
+		if (nl <= minY || nc <= minX) {
+			minX = 0;
+			minY = 0;
+		}
 		*x = minX;
 		*y = minY;
 	}
-};
+}
+;
 
 class LineFinder {
 private:
@@ -174,32 +181,7 @@ public:
 	}
 };
 int main(int argc, char** argv) {
-//	printf("started \n");
-//	Mat image;
-//	cv::Mat contours;
-//	if (argc != 2) {
-//		printf("No image data \n");
-//		return -1;
-//	}
-//	image = imread(argv[1], 1);
-//	if (!image.data) {
-//		printf("not found ");
-//		//printf(argv[1]);
-//		return (-1);
-//	}
-//
-//	// Create LineFinder instance
-//	LineFinder finder;
-//	// Set probabilistic Hough parameters
-//	finder.setLineLengthAndGap(100, 20);
-//	finder.setMinVote(80);
-//	// Detect lines and draw them
-//	std::vector<cv::Vec4i> lines = finder.findLines(contours);
-////	finder.drawDetectedLines(image);
-//	cv::namedWindow("Detected Lines with HoughP");
-//	cv::imshow("Detected Lines with HoughP", image);
-//	waitKey(0);
-//
+
 	// Open the default camera
 	cv::VideoCapture capture(0);
 	// Check if we succeeded
@@ -210,16 +192,7 @@ int main(int argc, char** argv) {
 	} else {
 		std::cout << "Video camera capture successful!" << std::endl;
 	}
-//	    int Rmin = 0;
-//	    int Rmax = 256;
-//
-//	    int Gmin = 0;
-//	    int Gmax = 256;
-//
-//	    int Bmin = 0;
-//	    int Bmax = 256;
-//
-//	    int RGBmax = 256;
+
 	int Rmin = 5, Rmax = 255;
 	for (;;) {
 		cv::Mat frame, hsv, frameBitmap;
@@ -263,12 +236,12 @@ int main(int argc, char** argv) {
 		//Detect lines
 		std::vector<cv::Vec4i> lines = finder.findLines(edges);
 		//Draw the detected lines
-		mFinder.findDots( frameBitmap);
+		mFinder.findDots(frameBitmap);
 		finder.drawDetectedLines(frame);
 
 		//int threshold=250;
 		//cv::threshold(frameBitmap, frameBitmap,threshold, 255, cv::THRESH_BINARY);
-		mFinder.drawDetectedDots(frameBitmap,frame);
+		mFinder.drawDetectedDots(frameBitmap, frame);
 		cv::imshow("Red Dots", frameBitmap);
 		cv::imshow("Camera Preview", frame);
 
