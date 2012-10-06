@@ -45,10 +45,9 @@ public:
 	std::vector<cv::Vec2i> find(cv::Mat& image, int radius = 1000) {
 		dots.clear();
 		int minX = 0, minY = 0;
-		for(int q=0;q<4;q++)
-		{
+		for (int q = 0; q < 4; q++) {
 			minX = 0, minY = 0;
-			brightFinder(image, &minX, &minY,q);
+			brightFinder(image, &minX, &minY, q);
 			//if (minX != 0 && minY != 0)
 			{
 //				// Поищем нет ли рядом точеньки...
@@ -65,10 +64,10 @@ public:
 //
 //				}
 //				if (!found) {
-					cv::Vec2i np;	//= new cv::Vec2i();
-					np[0] = minX;
-					np[1] = minY;
-					dots.push_back(np);
+				cv::Vec2i np;	//= new cv::Vec2i();
+				np[0] = minX;
+				np[1] = minY;
+				dots.push_back(np);
 //				}
 //				else
 //				{
@@ -85,16 +84,36 @@ public:
 	}
 	// Draw the detected lines on an image
 	void draw(/*cv::Mat &image, */cv::Mat &target, cv::Scalar color =
-			cv::Scalar(128, 128, 255), int thickness = 2, int size = 20) {
+			cv::Scalar(128, 128, 255), int thickness = 1, int size = 20) {
 		// Draw the lines
 		std::vector<cv::Vec2i>::const_iterator it2 = dots.begin();
 		int minX, minY;
+		int q = 0;
+		cv::Vec2i p1, p2, p3, p4;
 		while (it2 != dots.end()) {
 			minX = (*it2)[0];
 			minY = (*it2)[1];
+			switch (q) {
+			case 0:
+				p1[0] = minX;
+				p1[1] = minY;
+				break;
+			case 1:
+				p2[0] = minX;
+				p2[1] = minY;
+				break;
+			case 2:
+				p3 = (*it2);
+				break;
+			case 3:
+				p4 = (*it2);
+				break;
+			}
 			//brightFinder(image, &minX, &minY);
 			if ((minX == 0) && (minY == 0)) {
-				++it2; continue;
+				++it2;
+				q++;
+				continue;
 			}
 			//cout << "found";
 			cv::Point ptc(minX, minY);
@@ -106,11 +125,33 @@ public:
 			cv::Point pt4(minX, minY + size);
 			cv::line(target, pt3, pt4, color);
 
+			// рисуем 4 расстояния между точками
+			switch (q) {
+			case 1:
+				if (p1[0] != 0 && p1[1] != 0 && p2[0] != 0 && p2[1] != 0) {
+					cv::Point pts(p1[0], p1[1]), pte(p2[0], p2[1]);
+					cv::line(target, pts, pte, color);
+					int d = abs((int) (p1[0] - p2[0]))
+							+ abs((int) (p1[1] - p2[1]));
+					char str[11];
+				   sprintf(str, " <- %d -> ", d);
+					cv::putText(target,  str , p1,
+							cv::FONT_HERSHEY_SIMPLEX, 1, color);
+					std::cout << d<< " ";
+				}
+				break;
+			}
 			++it2;
+			++q;
+			//		cv::Vec2i p1 = dots[0];
+			//		cv::Vec2i p2 = dots[1];
+			//cv::Vec2i p3 = dots[2];
+			//cv::Vec2i p4 = dots[3];
+
 		}
 	}
 	//находим самое яркое пятно
-	void brightFinder(cv::Mat &image, int* x, int* y,int qadrant) const {
+	void brightFinder(cv::Mat &image, int* x, int* y, int qadrant) const {
 		//Ищем самое яркое пятно
 		int min = 175;
 		int minX = 0;
@@ -120,12 +161,31 @@ public:
 		// total number of elements per line
 		int nc = image.cols * image.channels();
 		//cout<<image.channels();
-		switch(qadrant)
-		{
-		case 0: *y = nl / 4;nl/=2;    *x = nc / 4; nc/=2;    break;
-		case 1: *y = nl / 4;nl/=2;    *x = nc / 2; nc-=nc/4; break;
-		case 2: *y = nl / 2;nl-=nl/4; *x = nc / 4; nc/=2;    break;
-		case 3: *y = nl / 2;nl-=nl/4; *x = nc / 2; nc-=nc/4; break;
+		switch (qadrant) {
+		case 0:
+			*y = nl / 4;
+			nl /= 2;
+			*x = nc / 4;
+			nc /= 2;
+			break;
+		case 1:
+			*y = nl / 4;
+			nl /= 2;
+			*x = nc / 2;
+			nc -= nc / 4;
+			break;
+		case 2:
+			*y = nl / 2;
+			nl -= nl / 4;
+			*x = nc / 4;
+			nc /= 2;
+			break;
+		case 3:
+			*y = nl / 2;
+			nl -= nl / 4;
+			*x = nc / 2;
+			nc -= nc / 4;
+			break;
 		}
 //		if (*y == 0)
 //			*y = nl / 4;
@@ -324,7 +384,7 @@ int main(int argc, char** argv) {
 //	        cv::inRange(planes[2],cvScalar(Rmin),cvScalar(Rmax),planes[2]);
 		//Convert the frame into a gray Frame
 		cv::cvtColor(frame, grayFrame, CV_BGR2GRAY);
-		frameBitmap =grayFrame;
+		frameBitmap = grayFrame;
 		//Apply a Gaussian Blur on the gray-level Frame
 		cv::GaussianBlur(grayFrame, gaussGrayFrame, cv::Size(9, 9), 2, 2);
 
