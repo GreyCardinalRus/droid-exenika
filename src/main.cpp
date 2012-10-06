@@ -94,7 +94,7 @@ public:
 			minY = (*it2)[1];
 			//brightFinder(image, &minX, &minY);
 			if ((minX == 0) && (minY == 0)) {
-				continue;
+				++it2; continue;
 			}
 			//cout << "found";
 			cv::Point ptc(minX, minY);
