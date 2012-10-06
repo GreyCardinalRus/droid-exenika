@@ -7,12 +7,32 @@
 
 #include <cv.h>
 #include <highgui.h>
-using namespace cv;
-using namespace std;
+//using namespace cv;
+//using namespace std;
 
 #define PI 3.1415926535898
 
-class MarkerFinder {
+//class B{    void MyPrint () {     }};
+//class B1 extends B{
+//    void MyPrint () {
+//        //Переопределение метода
+//                }
+//};
+//class B2 extends B{
+//    void MyPrint () {
+//        //Переопределение метода
+//    }
+//};
+
+class ObjectFinder {
+private:
+	// original image
+	cv::Mat img;
+public:
+	ObjectFinder();
+};
+
+class MarkerFinder /*extends ObjectFinder */{
 private:
 	// original image
 	cv::Mat img;
@@ -20,10 +40,9 @@ private:
 	// of the detected lines
 	std::vector<cv::Vec2i> dots;
 public:
-	MarkerFinder() {
-	}
-	;
-	std::vector<cv::Vec2i> findDots(cv::Mat& image, int radius = 200) {
+	//MarkerFinder() {
+	//}	;
+	std::vector<cv::Vec2i> find(cv::Mat& image, int radius = 1000) {
 		dots.clear();
 		int minX = 0, minY = 0;
 		do {
@@ -55,8 +74,8 @@ public:
 		return dots;
 	}
 	// Draw the detected lines on an image
-	void drawDetectedDots(cv::Mat &image, cv::Mat &target, cv::Scalar color =
-			cv::Scalar(128, 128, 255), int size = 20) {
+	void draw(/*cv::Mat &image, */cv::Mat &target, cv::Scalar color =
+			cv::Scalar(128, 128, 255),int thickness=5, int size = 20) {
 		// Draw the lines
 		std::vector<cv::Vec2i>::const_iterator it2 = dots.begin();
 		int minX, minY;
@@ -69,7 +88,7 @@ public:
 			}
 			//cout << "found";
 			cv::Point ptc(minX, minY);
-			cv::circle(target, ptc, size, color, 1, 8);
+			cv::circle(target, ptc, size, color, thickness, 8);
 			cv::Point pt1(minX - size, minY);
 			cv::Point pt2(minX + size, minY);
 			cv::line(target, pt1, pt2, color);
@@ -118,8 +137,7 @@ public:
 		*x = minX;
 		*y = minY;
 	}
-}
-;
+};
 
 class LineFinder {
 private:
@@ -161,27 +179,84 @@ public:
 		maxGap = gap;
 	}
 // Apply probabilistic Hough Transform
-	std::vector<cv::Vec4i> findLines(cv::Mat& binary) {
+	std::vector<cv::Vec4i> find(cv::Mat& binary) {
 		lines.clear();
 		cv::HoughLinesP(binary, lines, deltaRho, deltaTheta, minVote, minLength,
 				maxGap);
 		return lines;
 	}
 	// Draw the detected lines on an image
-	void drawDetectedLines(cv::Mat &image,
-			cv::Scalar color = cv::Scalar(255, 255, 255)) {
+	void draw(cv::Mat &image,
+			cv::Scalar color = cv::Scalar(32, 255, 32),int thickness=5) {
 		// Draw the lines
 		std::vector<cv::Vec4i>::const_iterator it2 = lines.begin();
 		while (it2 != lines.end()) {
 			cv::Point pt1((*it2)[0], (*it2)[1]);
 			cv::Point pt2((*it2)[2], (*it2)[3]);
-			cv::line(image, pt1, pt2, color);
+			cv::line(image, pt1, pt2, color,thickness);
 			++it2;
 		}
 	}
 };
-int main(int argc, char** argv) {
 
+class CircleFinder {
+private:
+	// original image
+	cv::Mat img;
+	// vector containing the end points
+	// of the detected lines
+	std::vector<cv::Vec3f> circles;
+public:
+	CircleFinder() {
+	}
+	;
+	std::vector<cv::Vec3f> find(cv::Mat& image) {
+		//cv::GaussianBlur(image, image, cv::Size(5, 5), 1.5);
+		std::vector<cv::Vec3f> circles;
+		cv::HoughCircles(image, circles, CV_HOUGH_GRADIENT,
+				10,	// accumulator resolution (size of the image / 2)
+				image.cols/5// minimum distance between two circles
+				//200, // Canny high threshold
+				//100, // minimum number of votes
+				//5, 1000
+				); // min and max radius
+		return circles;
+	}
+	// Draw the detected lines on an image
+	void draw(/*cv::Mat &image, */cv::Mat &target,
+			cv::Scalar color = cv::Scalar(128, 128, 255), int size = 20) {
+		//this->find(image);
+		// Draw the circles
+		std::vector<cv::Vec3f>::const_iterator itc = circles.begin();
+		while (itc != circles.end()) {
+			cv::circle(target, cv::Point((*itc)[0], (*itc)[1]), // circle centre
+			(*itc)[2],// circle radius
+			color,//cv::Scalar(255), // color
+					8);	// thickness
+			++itc;
+		}
+	}
+
+};
+
+int main(int argc, char** argv) {
+	cv::Mat image;
+	cv::Mat contours;
+	if (argc == 2) {
+		image = cv::imread(argv[1], 1);
+		if (!image.data) {
+			printf("not found ");
+			//printf(argv[1]);
+			return (-1);
+		}
+		cv::imshow("input file", image);
+	}
+	//cv::Mat imageROI= image(cv::Rect(110,260,35,40));
+	// Get the Hue histogram
+	//int minSat=65;
+	//ColorHistogram hc;
+	//cv::MatND colorhist=
+	//hc.getHueHistogram(imageROI,minSat);//
 	// Open the default camera
 	cv::VideoCapture capture(0);
 	// Check if we succeeded
@@ -196,22 +271,23 @@ int main(int argc, char** argv) {
 	int Rmin = 5, Rmax = 255;
 	for (;;) {
 		cv::Mat frame, hsv, frameBitmap;
-		cv::Mat grayFrame;
+		cv::Mat grayFrame,ResultFrame;
 		cv::Mat gaussGrayFrame;
 		cv::Mat edges;
 		// create vector of 3 images
 		std::vector<cv::Mat> planes;
 
-		LineFinder finder;
+		LineFinder lFinder;
 		MarkerFinder mFinder;
+		CircleFinder cFinder;
 
 		capture >> frame; // get a new frame from camera
 		// split 1 3-channel image into 3 1-channel images
 		cv::split(frame, planes);
 		//planes[2]^=planes[2];
 		cv::cvtColor(frame, hsv, CV_BGR2HSV);
-		inRange(planes[2], Scalar(0, 0, Rmin), Scalar(250, 250, Rmax),
-				frameBitmap);
+		cv::inRange(planes[2], cv::Scalar(0, 0, Rmin),
+				cv::Scalar(250, 250, Rmax), frameBitmap);
 		//frameBitmap.inv();
 		//frameBitmap = planes[2];                                                        // Переводим в bitmap
 //	        medianBlur(frameBitmap,frameBitmap,5); // фильтруем шумы
@@ -221,30 +297,38 @@ int main(int argc, char** argv) {
 		cv::cvtColor(frame, grayFrame, CV_BGR2GRAY);
 
 		//Apply a Gaussian Blur on the gray-level Frame
-		cv::GaussianBlur(grayFrame, gaussGrayFrame, cv::Size(7, 7), 1.5, 1.5);
+		cv::GaussianBlur(grayFrame, gaussGrayFrame, cv::Size(17, 17), 1.5, 0);
 
 		//Apply Canny Algorithm
 		cv::Canny(gaussGrayFrame, // gray-level source image
 				edges,          // output contours
-				0,              // low threshold
-				30,             // high threshold
-				3);             // aperture size
+				50,              // low threshold
+				150,             // high threshold// чем больше тем меньше помех. маркер на 250 -супер. Но остальное  -нужно контрастность/свет
+				3,true);             // aperture size
 		//End Canny Algorithm
 
-		finder.setLineLengthAndGap(100, 3);
-		finder.setMinVote(80);
-		//Detect lines
-		std::vector<cv::Vec4i> lines = finder.findLines(edges);
-		//Draw the detected lines
-		mFinder.findDots(frameBitmap);
-		finder.drawDetectedLines(frame);
+		lFinder.setLineLengthAndGap(100, 20);
+		lFinder.setMinVote(5);
 
+		//Detect lines
+		std::vector<cv::Vec2i> markers =mFinder.find(frameBitmap);
+
+		std::vector<cv::Vec4i> lines = lFinder.find(edges);
+		std::vector<cv::Vec3f> circles =cFinder.find(edges);
+
+		cv::cvtColor(grayFrame,ResultFrame,CV_GRAY2BGR);
+		mFinder.draw(ResultFrame);
+		lFinder.draw(ResultFrame);
+        cFinder.draw(ResultFrame);
 		//int threshold=250;
 		//cv::threshold(frameBitmap, frameBitmap,threshold, 255, cv::THRESH_BINARY);
-		mFinder.drawDetectedDots(frameBitmap, frame);
-		cv::imshow("Red Dots", frameBitmap);
-		cv::imshow("Camera Preview", frame);
 
+		cv::imshow("Red Dots", frameBitmap);
+
+
+		cv::imshow("Camera Preview", frame);
+		cv::imshow("ResultFrame", ResultFrame);
+		cv::imshow("edges", edges);
 		if (cv::waitKey(30) >= 0)
 			break;
 	}
