@@ -29,7 +29,7 @@ private:
 	// original image
 	cv::Mat img;
 public:
-	ObjectFinder();
+	//ObjectFinder();
 };
 
 class MarkerFinder /*extends ObjectFinder */{
@@ -75,7 +75,7 @@ public:
 	}
 	// Draw the detected lines on an image
 	void draw(/*cv::Mat &image, */cv::Mat &target, cv::Scalar color =
-			cv::Scalar(128, 128, 255),int thickness=5, int size = 20) {
+			cv::Scalar(128, 128, 255),int thickness=2, int size = 20) {
 		// Draw the lines
 		std::vector<cv::Vec2i>::const_iterator it2 = dots.begin();
 		int minX, minY;
@@ -120,7 +120,7 @@ public:
 			uchar* data = image.ptr<uchar>(j);
 			for (int i = *x; i < nc; i++) {
 				// process each pixel ---------------------
-				if (data[i] <= min) {
+				if (data[i] >= min) {
 					min = data[i];
 					minX = i;
 					minY = j;
@@ -207,18 +207,16 @@ private:
 	// of the detected lines
 	std::vector<cv::Vec3f> circles;
 public:
-	CircleFinder() {
-	}
-	;
+	CircleFinder() {	}	;
 	std::vector<cv::Vec3f> find(cv::Mat& image) {
-		//cv::GaussianBlur(image, image, cv::Size(5, 5), 1.5);
+		cv::GaussianBlur(image, image, cv::Size(5, 5), 1.5);
 		std::vector<cv::Vec3f> circles;
 		cv::HoughCircles(image, circles, CV_HOUGH_GRADIENT,
-				10,	// accumulator resolution (size of the image / 2)
-				image.cols/5// minimum distance between two circles
-				//200, // Canny high threshold
-				//100, // minimum number of votes
-				//5, 1000
+				3	// accumulator resolution (size of the image / 2)
+				,image.rows/10// minimum distance between two circles
+				,100 // Canny high threshold
+				,100 // minimum number of votes
+				,50, 1000
 				); // min and max radius
 		return circles;
 	}
@@ -268,7 +266,9 @@ int main(int argc, char** argv) {
 		std::cout << "Video camera capture successful!" << std::endl;
 	}
 
-	int Rmin = 5, Rmax = 255;
+	int Rmin = 100, Rmax = 225;
+	int Gmin = 100, Gmax = 225;
+	int Bmin = 100, Bmax = 255;
 	for (;;) {
 		cv::Mat frame, hsv, frameBitmap;
 		cv::Mat grayFrame,ResultFrame;
@@ -286,8 +286,18 @@ int main(int argc, char** argv) {
 		cv::split(frame, planes);
 		//planes[2]^=planes[2];
 		cv::cvtColor(frame, hsv, CV_BGR2HSV);
-		cv::inRange(planes[2], cv::Scalar(0, 0, Rmin),
-				cv::Scalar(250, 250, Rmax), frameBitmap);
+		cv::inRange(
+				//planes[2]
+				hsv
+				, cv::Scalar(Bmin, Gmin, Rmin),
+				cv::Scalar(Bmax, Gmax, Rmax), frameBitmap);
+		//Apply Canny Algorithm
+//		cv::Canny(planes[2], // gray-level source image
+//				frameBitmap,          // output contours
+//					150,              // low threshold
+//					250,             // high threshold// чем больше тем меньше помех. маркер на 250 -супер. Но остальное  -нужно контрастность/свет
+//					3,false);             // aperture size
+			//End Canny Algorithm
 		//frameBitmap.inv();
 		//frameBitmap = planes[2];                                                        // Переводим в bitmap
 //	        medianBlur(frameBitmap,frameBitmap,5); // фильтруем шумы
@@ -297,39 +307,38 @@ int main(int argc, char** argv) {
 		cv::cvtColor(frame, grayFrame, CV_BGR2GRAY);
 
 		//Apply a Gaussian Blur on the gray-level Frame
-		cv::GaussianBlur(grayFrame, gaussGrayFrame, cv::Size(17, 17), 1.5, 1.5);
+		cv::GaussianBlur(grayFrame, gaussGrayFrame, cv::Size(9, 9), 2, 2);
 
 		//Apply Canny Algorithm
 		cv::Canny(gaussGrayFrame, // gray-level source image
 				edges,          // output contours
-				50,              // low threshold
-				150,             // high threshold// чем больше тем меньше помех. маркер на 250 -супер. Но остальное  -нужно контрастность/свет
+				10,              // low threshold
+				100,             // high threshold// чем больше тем меньше помех. маркер на 250 -супер. Но остальное  -нужно контрастность/свет
 				3,false);             // aperture size
 		//End Canny Algorithm
 
-		lFinder.setLineLengthAndGap(30, 10);
-		lFinder.setMinVote(5);
+		lFinder.setLineLengthAndGap(100, 10);
+		lFinder.setMinVote(100);
 
 		//Detect lines
 		std::vector<cv::Vec2i> markers =mFinder.find(frameBitmap);
 
-		std::vector<cv::Vec4i> lines = lFinder.find(edges);
-		std::vector<cv::Vec3f> circles =cFinder.find(edges);
+		//std::vector<cv::Vec4i> lines = lFinder.find(edges);
+
+		std::vector<cv::Vec3f> circles =cFinder.find(grayFrame);
 
 		cv::cvtColor(grayFrame,ResultFrame,CV_GRAY2BGR);
+		ResultFrame=frame;
 		mFinder.draw(ResultFrame);
 		lFinder.draw(ResultFrame);
         cFinder.draw(ResultFrame);
-		//int threshold=250;
-		//cv::threshold(frameBitmap, frameBitmap,threshold, 255, cv::THRESH_BINARY);
 
 		cv::imshow("Red Dots", frameBitmap);
-
-
+		cv::imshow("grayFrame", grayFrame);
 		cv::imshow("Camera Preview", frame);
-		cv::imshow("ResultFrame", ResultFrame);
-		cv::imshow("edges", edges);
 
+		cv::imshow("edges", edges);
+		cv::imshow("ResultFrame", ResultFrame);
 //		cv::Mat corners, dilated_corners;
 //		cv::preCornerDetect(image, corners, 3);
 //		// dilation with 3x3 rectangular structuring element
