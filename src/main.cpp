@@ -10,7 +10,7 @@
 //using namespace cv;
 //using namespace std;
 
-#define PI 3.1415926535898
+//#define PI 3.1415926535898
 
 //class B{    void MyPrint () {     }};
 //class B1 extends B{
@@ -160,7 +160,7 @@ public:
 // Default accumulator resolution is 1 pixel by 1 degree
 // no gap, no mimimum length
 	LineFinder() :
-			deltaRho(1), deltaTheta(PI / 180), minVote(10), minLength(0.), maxGap(
+			deltaRho(1), deltaTheta(CV_PI / 180), minVote(10), minLength(0.), maxGap(
 					0.) {
 	}
 
@@ -179,9 +179,9 @@ public:
 		maxGap = gap;
 	}
 // Apply probabilistic Hough Transform
-	std::vector<cv::Vec4i> find(cv::Mat& binary) {
+	std::vector<cv::Vec4i> find(cv::Mat& image) {
 		lines.clear();
-		cv::HoughLinesP(binary, lines, deltaRho, deltaTheta, minVote, minLength,
+		cv::HoughLinesP(image, lines, deltaRho, deltaTheta, minVote, minLength,
 				maxGap);
 		return lines;
 	}
@@ -297,17 +297,17 @@ int main(int argc, char** argv) {
 		cv::cvtColor(frame, grayFrame, CV_BGR2GRAY);
 
 		//Apply a Gaussian Blur on the gray-level Frame
-		cv::GaussianBlur(grayFrame, gaussGrayFrame, cv::Size(17, 17), 1.5, 0);
+		cv::GaussianBlur(grayFrame, gaussGrayFrame, cv::Size(17, 17), 1.5, 1.5);
 
 		//Apply Canny Algorithm
 		cv::Canny(gaussGrayFrame, // gray-level source image
 				edges,          // output contours
 				50,              // low threshold
 				150,             // high threshold// чем больше тем меньше помех. маркер на 250 -супер. Но остальное  -нужно контрастность/свет
-				3,true);             // aperture size
+				3,false);             // aperture size
 		//End Canny Algorithm
 
-		lFinder.setLineLengthAndGap(100, 20);
+		lFinder.setLineLengthAndGap(30, 10);
 		lFinder.setMinVote(5);
 
 		//Detect lines
@@ -329,6 +329,13 @@ int main(int argc, char** argv) {
 		cv::imshow("Camera Preview", frame);
 		cv::imshow("ResultFrame", ResultFrame);
 		cv::imshow("edges", edges);
+
+//		cv::Mat corners, dilated_corners;
+//		cv::preCornerDetect(image, corners, 3);
+//		// dilation with 3x3 rectangular structuring element
+//		cv::dilate(corners, dilated_corners, cv::Mat(), 1);
+//		cv::Mat corner_mask = corners == dilated_corners;
+
 		if (cv::waitKey(30) >= 0)
 			break;
 	}
