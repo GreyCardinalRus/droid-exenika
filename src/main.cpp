@@ -32,10 +32,10 @@ public:
 	//ObjectFinder();
 };
 
-class MarkerFinder /*extends ObjectFinder */{
+class MarkerFinder : public ObjectFinder {
 private:
 	// original image
-	cv::Mat img;
+	//cv::Mat img;
 	// vector containing the end points
 	// of the detected lines
 	std::vector<cv::Vec2i> dots;
@@ -125,61 +125,48 @@ public:
 			cv::Point pt4(minX, minY + size);
 			cv::line(target, pt3, pt4, color);
 
-			// рисуем 4 расстояния между точками
-			switch (q) {
-			case 3:
-				if (p1[0] != 0 && p1[1] != 0 && p2[0] != 0 && p2[1] != 0) {
-					cv::Point pts(p1[0], p1[1]), pte(p2[0], p2[1]);
-					cv::line(target, pts, pte, color);
-					int d = abs((int) (p1[0] - p2[0]))
-							+ abs((int) (p1[1] - p2[1]));
-					char str[11];
-					sprintf(str, " <- %d -> ", d);
-					cv::putText(target, str, p1, cv::FONT_HERSHEY_SIMPLEX, 1,
-							color);
-					//std::cout << d<< " ";
-				}
-				if (p3[0] != 0 && p3[1] != 0 && p1[0] != 0 && p1[1] != 0) {
-					cv::Point pts(p3[0], p3[1]), pte(p1[0], p1[1]),ptm(abs((int) (p1[0] + p3[0]))/2,abs((int) (p1[1] + p3[1]))/2);
-					cv::line(target, pts, pte, color);
-					int d = abs((int) (p3[0] - p1[0]))
-							+ abs((int) (p3[1] - p1[1]));
-					char str[11];
-					sprintf(str, " <- %d  ", d);
-					cv::putText(target, str, ptm, cv::FONT_HERSHEY_SIMPLEX, 1,
-							color);
-					//std::cout << d<< " ";
-				}
-				if (p3[0] != 0 && p3[1] != 0 && p4[0] != 0 && p4[1] != 0) {
-					cv::Point pts(p3[0], p3[1]), pte(p4[0], p4[1]);
-					cv::line(target, pts, pte, color);
-					int d = abs((int) (p3[0] - p4[0]))
-							+ abs((int) (p3[1] - p4[1]));
-					char str[11];
-					sprintf(str, " <- %d -> ", d);
-					cv::putText(target, str, p3, cv::FONT_HERSHEY_SIMPLEX, 1,
-							color);
-				}
-				if (p2[0] != 0 && p2[1] != 0 && p4[0] != 0 && p4[1] != 0) {
-					cv::Point pts(p2[0], p2[1]), pte(p4[0], p4[1]),ptm(abs((int) (p4[0] + p2[0]))/2,abs((int) (p4[1] + p2[1]))/2);
-					cv::line(target, pts, pte, color);
-					int d = abs((int) (p2[0] - p4[0]))
-							+ abs((int) (p2[1] - p4[1]));
-					char str[11];
-					sprintf(str, " <- %d  ", d);
-					cv::putText(target, str, ptm, cv::FONT_HERSHEY_SIMPLEX, 1,
-							color);
-					//std::cout << d<< " ";
-				}
-				break;
-			}
-			++it2;
-			++q;
-			//		cv::Vec2i p1 = dots[0];
-			//		cv::Vec2i p2 = dots[1];
-			//cv::Vec2i p3 = dots[2];
-			//cv::Vec2i p4 = dots[3];
+			++it2;++q;
 
+		}
+		// рисуем 4 расстояния между точками
+		if (p1[0] != 0 && p1[1] != 0 && p2[0] != 0 && p2[1] != 0) {
+			cv::Point pts(p1[0], p1[1]), pte(p2[0], p2[1]);
+			cv::line(target, pts, pte, color);
+			int d = abs((int) (p1[0] - p2[0])) + abs((int) (p1[1] - p2[1]));
+			char str[11];
+			sprintf(str, " <- %d -> ", d);
+			cv::putText(target, str, p1, cv::FONT_HERSHEY_SIMPLEX, 1, color);
+			//std::cout << d<< " ";
+		}
+		if (p3[0] != 0 && p3[1] != 0 && p1[0] != 0 && p1[1] != 0) {
+			cv::Point pts(p3[0], p3[1]), pte(p1[0], p1[1]), ptm(
+					abs((int) (p1[0] + p3[0])) / 2,
+					abs((int) (p1[1] + p3[1])) / 2);
+			cv::line(target, pts, pte, color);
+			int d = abs((int) (p3[0] - p1[0])) + abs((int) (p3[1] - p1[1]));
+			char str[11];
+			sprintf(str, " <- %d  ", d);
+			cv::putText(target, str, ptm, cv::FONT_HERSHEY_SIMPLEX, 1, color);
+			//std::cout << d<< " ";
+		}
+		if (p3[0] != 0 && p3[1] != 0 && p4[0] != 0 && p4[1] != 0) {
+			cv::Point pts(p3[0], p3[1]), pte(p4[0], p4[1]);
+			cv::line(target, pts, pte, color);
+			int d = abs((int) (p3[0] - p4[0])) + abs((int) (p3[1] - p4[1]));
+			char str[11];
+			sprintf(str, " <- %d -> ", d);
+			cv::putText(target, str, p3, cv::FONT_HERSHEY_SIMPLEX, 1, color);
+		}
+		if (p2[0] != 0 && p2[1] != 0 && p4[0] != 0 && p4[1] != 0) {
+			cv::Point pts(p2[0], p2[1]), pte(p4[0], p4[1]), ptm(
+					abs((int) (p4[0] + p2[0])) / 2,
+					abs((int) (p4[1] + p2[1])) / 2);
+			cv::line(target, pts, pte, color);
+			int d = abs((int) (p2[0] - p4[0])) + abs((int) (p2[1] - p4[1]));
+			char str[11];
+			sprintf(str, " <- %d  ", d);
+			cv::putText(target, str, ptm, cv::FONT_HERSHEY_SIMPLEX, 1, color);
+			//std::cout << d<< " ";
 		}
 	}
 	//находим самое яркое пятно
@@ -219,12 +206,7 @@ public:
 			nc -= nc / 4;
 			break;
 		}
-//		if (*y == 0)
-//			*y = nl / 4;
-//		nl -= nl / 4;
-//		if (*x == 0)
-//			*x = nc / 4;
-//		nc -= nc / 4;
+
 		for (int j = *y; j < nl; j++) {
 			// get the address of row j
 			uchar* data = image.ptr<uchar>(j);
@@ -249,10 +231,10 @@ public:
 	}
 };
 
-class LineFinder {
+class LineFinder : public ObjectFinder {
 private:
 // original image
-	cv::Mat img;
+//	cv::Mat img;
 // vector containing the end points
 // of the detected lines
 	std::vector<cv::Vec4i> lines;
@@ -297,7 +279,7 @@ public:
 	}
 	// Draw the detected lines on an image
 	void draw(cv::Mat &image, cv::Scalar color = cv::Scalar(32, 255, 32),
-			int thickness = 5) {
+			int thickness = 2) {
 		// Draw the lines
 		std::vector<cv::Vec4i>::const_iterator it2 = lines.begin();
 		while (it2 != lines.end()) {
@@ -309,10 +291,10 @@ public:
 	}
 };
 
-class CircleFinder {
+class CircleFinder: public ObjectFinder{
 private:
 	// original image
-	cv::Mat img;
+//	cv::Mat img;
 	// vector containing the end points
 	// of the detected lines
 	std::vector<cv::Vec3f> circles;
@@ -321,13 +303,15 @@ public:
 	}
 	;
 	std::vector<cv::Vec3f> find(cv::Mat& image) {
-		cv::GaussianBlur(image, image, cv::Size(5, 5), 1.5);
+		cv::GaussianBlur(image, image, cv::Size(5, 5),1.5,1.5);
 		std::vector<cv::Vec3f> circles;
-		cv::HoughCircles(image, circles, CV_HOUGH_GRADIENT, 3// accumulator resolution (size of the image / 2)
-				, image.rows / 10	// minimum distance between two circles
-						, 100 // Canny high threshold
-				, 100 // minimum number of votes
-				, 50, 1000); // min and max radius
+		cv::HoughCircles(image, circles, CV_HOUGH_GRADIENT
+				, 2// accumulator resolution (size of the image / 2)
+				, 50//image.rows / 50	// minimum distance between two circles
+				, 100 // Canny high threshold
+				, 1 // minimum number of votes
+				//, 20, 200
+				); // min and max radius
 		return circles;
 	}
 	// Draw the detected lines on an image
@@ -340,11 +324,15 @@ public:
 			cv::circle(target, cv::Point((*itc)[0], (*itc)[1]), // circle centre
 			(*itc)[2], // circle radius
 					color, //cv::Scalar(255), // color
-					8);	// thickness
+					21);	// thickness
 			++itc;
+			std::cout<<" found circle\n";
 		}
+		//cv::circle(target, cv::Point(274, 167), // circle centre
+		//			40, // circle radius
+			//				color, //cv::Scalar(255), // color
+			//				1);	// thickness
 	}
-
 };
 
 int main(int argc, char** argv) {
@@ -357,7 +345,9 @@ int main(int argc, char** argv) {
 			//printf(argv[1]);
 			return (-1);
 		}
-		cv::imshow("input file", image);
+//		cv::imshow("input file", image);
+		cv::cvtColor(image, image, CV_BGR2GRAY);
+	//
 	}
 	//cv::Mat imageROI= image(cv::Rect(110,260,35,40));
 	// Get the Hue histogram
@@ -403,41 +393,29 @@ int main(int argc, char** argv) {
 				frameBitmap);
 
 		cv::medianBlur(frameBitmap, frameBitmap, 5); // фильтруем шумы
-		//Apply Canny Algorithm
-//		cv::Canny(planes[2], // gray-level source image
-//				frameBitmap,          // output contours
-//					150,              // low threshold
-//					250,             // high threshold// чем больше тем меньше помех. маркер на 250 -супер. Но остальное  -нужно контрастность/свет
-//					3,false);             // aperture size
-		//End Canny Algorithm
-		//frameBitmap.inv();
-		//frameBitmap = planes[2];                                                        // Переводим в bitmap
-//	        medianBlur(frameBitmap,frameBitmap,5); // фильтруем шумы
-		//cv::split(hsv,planes);
-//	        cv::inRange(planes[2],cvScalar(Rmin),cvScalar(Rmax),planes[2]);
-		//Convert the frame into a gray Frame
 		cv::cvtColor(frame, grayFrame, CV_BGR2GRAY);
 		frameBitmap = grayFrame;
 		//Apply a Gaussian Blur on the gray-level Frame
-		cv::GaussianBlur(grayFrame, gaussGrayFrame, cv::Size(9, 9), 2, 2);
+		cv::GaussianBlur(grayFrame, grayFrame, cv::Size(9, 9), 2, 2);
 
 		//Apply Canny Algorithm
-		cv::Canny(gaussGrayFrame, // gray-level source image
+		cv::Canny(grayFrame, // gray-level source image
 				edges,          // output contours
-				10,              // low threshold
+				50,              // low threshold
 				100, // high threshold// чем больше тем меньше помех. маркер на 250 -супер. Но остальное  -нужно контрастность/свет
 				3, false);             // aperture size
 		//End Canny Algorithm
 
-		lFinder.setLineLengthAndGap(100, 10);
-		lFinder.setMinVote(100);
+		lFinder.setLineLengthAndGap(100, 5);
+		lFinder.setMinVote(150);
 
 		//Detect lines
-		std::vector<cv::Vec2i> markers = mFinder.find(frameBitmap);
-
-		//std::vector<cv::Vec4i> lines = lFinder.find(edges);
-
-		std::vector<cv::Vec3f> circles = cFinder.find(grayFrame);
+		//std::vector<cv::Vec2i> markers = mFinder.find(frameBitmap);
+		cv::GaussianBlur(edges, edges, cv::Size(5, 5), 1.5, 1.5);
+		//cv::medianBlur(edges, edges, 5); // фильтруем шумы
+		std::vector<cv::Vec3f> circles = cFinder.find(grayFrame /*grayFrame*/);
+		//grayFrame=image;
+		std::vector<cv::Vec4i> lines = lFinder.find(edges);
 
 		cv::cvtColor(grayFrame, ResultFrame, CV_GRAY2BGR);
 		ResultFrame = frame;
@@ -445,9 +423,9 @@ int main(int argc, char** argv) {
 		lFinder.draw(ResultFrame);
 		cFinder.draw(ResultFrame);
 
-		cv::imshow("Red Dots", frameBitmap);
+//		cv::imshow("Red Dots", frameBitmap);
 		cv::imshow("grayFrame", grayFrame);
-		cv::imshow("Camera Preview", frame);
+//		cv::imshow("Camera Preview", frame);
 
 		cv::imshow("edges", edges);
 		cv::imshow("ResultFrame", ResultFrame);
@@ -456,7 +434,7 @@ int main(int argc, char** argv) {
 //		// dilation with 3x3 rectangular structuring element
 //		cv::dilate(corners, dilated_corners, cv::Mat(), 1);
 //		cv::Mat corner_mask = corners == dilated_corners;
-
+//		cv::imshow("input file", image);
 		if (cv::waitKey(30) >= 0)
 			break;
 	}
