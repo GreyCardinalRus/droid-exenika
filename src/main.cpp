@@ -127,17 +127,49 @@ public:
 
 			// рисуем 4 расстояния между точками
 			switch (q) {
-			case 1:
+			case 3:
 				if (p1[0] != 0 && p1[1] != 0 && p2[0] != 0 && p2[1] != 0) {
 					cv::Point pts(p1[0], p1[1]), pte(p2[0], p2[1]);
 					cv::line(target, pts, pte, color);
 					int d = abs((int) (p1[0] - p2[0]))
 							+ abs((int) (p1[1] - p2[1]));
 					char str[11];
-				   sprintf(str, " <- %d -> ", d);
-					cv::putText(target,  str , p1,
-							cv::FONT_HERSHEY_SIMPLEX, 1, color);
-					std::cout << d<< " ";
+					sprintf(str, " <- %d -> ", d);
+					cv::putText(target, str, p1, cv::FONT_HERSHEY_SIMPLEX, 1,
+							color);
+					//std::cout << d<< " ";
+				}
+				if (p3[0] != 0 && p3[1] != 0 && p1[0] != 0 && p1[1] != 0) {
+					cv::Point pts(p3[0], p3[1]), pte(p1[0], p1[1]),ptm(abs((int) (p1[0] + p3[0]))/2,abs((int) (p1[1] + p3[1]))/2);
+					cv::line(target, pts, pte, color);
+					int d = abs((int) (p3[0] - p1[0]))
+							+ abs((int) (p3[1] - p1[1]));
+					char str[11];
+					sprintf(str, " <- %d  ", d);
+					cv::putText(target, str, ptm, cv::FONT_HERSHEY_SIMPLEX, 1,
+							color);
+					//std::cout << d<< " ";
+				}
+				if (p3[0] != 0 && p3[1] != 0 && p4[0] != 0 && p4[1] != 0) {
+					cv::Point pts(p3[0], p3[1]), pte(p4[0], p4[1]);
+					cv::line(target, pts, pte, color);
+					int d = abs((int) (p3[0] - p4[0]))
+							+ abs((int) (p3[1] - p4[1]));
+					char str[11];
+					sprintf(str, " <- %d -> ", d);
+					cv::putText(target, str, p3, cv::FONT_HERSHEY_SIMPLEX, 1,
+							color);
+				}
+				if (p2[0] != 0 && p2[1] != 0 && p4[0] != 0 && p4[1] != 0) {
+					cv::Point pts(p2[0], p2[1]), pte(p4[0], p4[1]),ptm(abs((int) (p4[0] + p2[0]))/2,abs((int) (p4[1] + p2[1]))/2);
+					cv::line(target, pts, pte, color);
+					int d = abs((int) (p2[0] - p4[0]))
+							+ abs((int) (p2[1] - p4[1]));
+					char str[11];
+					sprintf(str, " <- %d  ", d);
+					cv::putText(target, str, ptm, cv::FONT_HERSHEY_SIMPLEX, 1,
+							color);
+					//std::cout << d<< " ";
 				}
 				break;
 			}
@@ -343,7 +375,8 @@ int main(int argc, char** argv) {
 	} else {
 		std::cout << "Video camera capture successful!" << std::endl;
 	}
-
+//	w = cv::GetCaptureProperty(capture, cv::CV_CAP_PROP_FRAME_WIDTH)
+//	h = cv.GetCaptureProperty(capture, cv.CV_CAP_PROP_FRAME_HEIGHT)
 	int Rmin = 100, Rmax = 255;
 	int Gmin = 50, Gmax = 255;
 	int Bmin = 50, Bmax = 255;
