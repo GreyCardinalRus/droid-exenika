@@ -1,0 +1,7 @@
+
+syntax: regexp
+.mk
+syntax: regexp
+.d
+syntax: regexp
+.obj

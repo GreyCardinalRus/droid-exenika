@@ -336,14 +336,14 @@ public:
 	CircleFinder() {
 	}
 	;
-	std::vector<cv::Vec3f> find(cv::Mat& image) {
+	std::vector<cv::Vec3f> find(cv::Mat image) {
 		//cv::GaussianBlur(image, image, cv::Size(5, 5),1.5,1.5);
-		std::vector<cv::Vec3f> circles;
+		cv::medianBlur(image, image, 5);
 		cv::HoughCircles(image, circles, CV_HOUGH_GRADIENT, 2// accumulator resolution (size of the image / 2)
 				, image.rows / 15	// minimum distance between two circles
-						, 200 // Canny high threshold
-				, 300 // minimum number of votes
-				//, 20, 200 // min and max radius
+				, 200 // Canny high threshold
+				, 150 // minimum number of votes
+				, 20, 300 // min and max radius
 				);
 		return circles;
 	}
@@ -357,14 +357,15 @@ public:
 			cv::circle(target, cv::Point((*itc)[0], (*itc)[1]), // circle centre
 			(*itc)[2], // circle radius
 					color, //cv::Scalar(255), // color
-					21);	// thickness
+					2);	// thickness
 			++itc;
-			std::cout << " found circle\n";
 		}
-		//cv::circle(target, cv::Point(274, 167), // circle centre
-		//			40, // circle radius
-		//				color, //cv::Scalar(255), // color
-		//				1);	// thickness
+//	    for( size_t i = 0; i < circles.size(); i++ )
+//	    {
+//	    	cv::Vec3i c = circles[i];
+//	    	cv::circle( target, cv::Point(c[0], c[1]), c[2], cv::Scalar(0,0,255), 2, CV_AA);
+//	    	cv::circle( target, cv::Point(c[0], c[1]), 2, cv::Scalar(0,255,0), 2, CV_AA);
+//	    }
 	}
 };
 
@@ -375,12 +376,9 @@ int main(int argc, char** argv) {
 		image = cv::imread(argv[1], 1);
 		if (!image.data) {
 			printf("not found ");
-			//printf(argv[1]);
 			return (-1);
 		}
-//		cv::imshow("input file", image);
 		cv::cvtColor(image, image, CV_BGR2GRAY);
-		//
 	}
 	//cv::Mat imageROI= image(cv::Rect(110,260,35,40));
 	// Get the Hue histogram
@@ -398,8 +396,6 @@ int main(int argc, char** argv) {
 	} else {
 		std::cout << "Video camera capture successful!" << std::endl;
 	}
-//	w = cv::GetCaptureProperty(capture, cv::CV_CAP_PROP_FRAME_WIDTH)
-//	h = cv.GetCaptureProperty(capture, cv.CV_CAP_PROP_FRAME_HEIGHT)
 	int Rmin = 100, Rmax = 255;
 	int Gmin = 50, Gmax = 255;
 	int Bmin = 50, Bmax = 255;
@@ -426,12 +422,12 @@ int main(int argc, char** argv) {
 				hsv, cv::Scalar(Bmin, Gmin, Rmin), cv::Scalar(Bmax, Gmax, Rmax),
 				frameBitmap);
 
-		cv::medianBlur(frameBitmap, frameBitmap, 5); // фильтруем шумы
+		//cv::medianBlur(frameBitmap, frameBitmap, 5); // фильтруем шумы
 		cv::cvtColor(frame, grayFrame, CV_BGR2GRAY);
-		/////cv::equalizeHist(grayFrame, grayFrame);
+		//cv::equalizeHist(grayFrame, grayFrame);
 		frameBitmap = grayFrame;
 		//Apply a Gaussian Blur on the gray-level Frame
-		cv::GaussianBlur(grayFrame, grayFrame, cv::Size(5, 5), 1.5, 1.5);
+		//cv::GaussianBlur(grayFrame, grayFrame, cv::Size(5, 5), 1.5, 1.5);
 
 		//Apply Canny Algorithm
 		cv::Canny(grayFrame, // gray-level source image
@@ -447,11 +443,10 @@ int main(int argc, char** argv) {
 		//Detect lines
 		//std::vector<cv::Vec2i> markers = mFinder.find(frameBitmap);
 		cv::GaussianBlur(edges, edges, cv::Size(5, 5), 1.5, 1.5);
-		//cv::medianBlur(edges, edges, 5); // фильтруем шумы
-		std::vector<cv::Vec3f> circles = cFinder.find(edges/*grayFrame*/);
-		//grayFrame=image;
-		std::vector<cv::Vec4i> lines = lFinder.find(edges);
-		fFinder.find(grayFrame);
+		/////////cv::medianBlur(edges, edges, 5); // фильтруем шумы
+		std::vector<cv::Vec3f> circles = cFinder.find(grayFrame);
+		std::vector<cv::Vec4i> lines   = lFinder.find(edges);
+		//std::vector<cv::Rect>  faces   = fFinder.find(grayFrame);
 		cv::cvtColor(grayFrame, ResultFrame, CV_GRAY2BGR);
 		ResultFrame = frame;
 		mFinder.draw(ResultFrame);
