@@ -32,7 +32,7 @@ public:
 	//ObjectFinder();
 };
 
-class MarkerFinder : public ObjectFinder {
+class MarkerFinder: public ObjectFinder {
 private:
 	// original image
 	//cv::Mat img;
@@ -125,7 +125,8 @@ public:
 			cv::Point pt4(minX, minY + size);
 			cv::line(target, pt3, pt4, color);
 
-			++it2;++q;
+			++it2;
+			++q;
 
 		}
 		// рисуем 4 расстояния между точками
@@ -231,7 +232,7 @@ public:
 	}
 };
 
-class LineFinder : public ObjectFinder {
+class LineFinder: public ObjectFinder {
 private:
 // original image
 //	cv::Mat img;
@@ -291,7 +292,40 @@ public:
 	}
 };
 
-class CircleFinder: public ObjectFinder{
+class FaceFinder: public ObjectFinder {
+private:
+//	char* cascadeName =
+//			"../../data/haarcascades/haarcascade_frontalface_alt.xml";
+//	char* nestedCascadeName =
+//			"../../data/haarcascades/haarcascade_eye_tree_eyeglasses.xml";
+	//static cv::String face_cascade_name = "haarcascade_frontalface_alt.xml";
+	std::vector<cv::Rect> faces;
+	cv::CascadeClassifier face_cascade;
+	bool loaded;
+public:
+	FaceFinder() {
+		loaded = face_cascade.load("haarcascade_frontalface_alt.xml");
+		if (!loaded) {
+			printf("--(!)Error loading haarcascade_frontalface_alt.xml\n");
+		};
+	}
+	;
+	std::vector<cv::Rect> find( cv::Mat image) {
+		if ( loaded) face_cascade.detectMultiScale( image, faces, 1.1, 2, 0|CV_HAAR_SCALE_IMAGE, cv::Size(30, 30) );
+		return faces;
+	}
+	void draw(/*cv::Mat &image, */cv::Mat &target, cv::Scalar color =
+			cv::Scalar(128, 128, 255), int size = 20) {
+		std::vector<cv::Rect>::const_iterator itc = faces.begin();
+		while (itc != faces.end()) {
+			cv::Point center( (*itc).x + (*itc).width*0.5, (*itc).y + (*itc).height*0.5 );
+		      ellipse( target, center, cv::Size( (*itc).width*0.5, (*itc).height*0.5), 0, 0, 360, color, 2, 8, 0 );
+			++itc;
+		}
+	}
+};
+
+class CircleFinder: public ObjectFinder {
 private:
 	// original image
 //	cv::Mat img;
@@ -303,15 +337,14 @@ public:
 	}
 	;
 	std::vector<cv::Vec3f> find(cv::Mat& image) {
-		cv::GaussianBlur(image, image, cv::Size(5, 5),1.5,1.5);
+		//cv::GaussianBlur(image, image, cv::Size(5, 5),1.5,1.5);
 		std::vector<cv::Vec3f> circles;
-		cv::HoughCircles(image, circles, CV_HOUGH_GRADIENT
-				, 2// accumulator resolution (size of the image / 2)
-				, 50//image.rows / 50	// minimum distance between two circles
-				, 100 // Canny high threshold
-				, 1 // minimum number of votes
-				//, 20, 200
-				); // min and max radius
+		cv::HoughCircles(image, circles, CV_HOUGH_GRADIENT, 2// accumulator resolution (size of the image / 2)
+				, image.rows / 15	// minimum distance between two circles
+						, 200 // Canny high threshold
+				, 300 // minimum number of votes
+				//, 20, 200 // min and max radius
+				);
 		return circles;
 	}
 	// Draw the detected lines on an image
@@ -326,12 +359,12 @@ public:
 					color, //cv::Scalar(255), // color
 					21);	// thickness
 			++itc;
-			std::cout<<" found circle\n";
+			std::cout << " found circle\n";
 		}
 		//cv::circle(target, cv::Point(274, 167), // circle centre
 		//			40, // circle radius
-			//				color, //cv::Scalar(255), // color
-			//				1);	// thickness
+		//				color, //cv::Scalar(255), // color
+		//				1);	// thickness
 	}
 };
 
@@ -347,7 +380,7 @@ int main(int argc, char** argv) {
 		}
 //		cv::imshow("input file", image);
 		cv::cvtColor(image, image, CV_BGR2GRAY);
-	//
+		//
 	}
 	//cv::Mat imageROI= image(cv::Rect(110,260,35,40));
 	// Get the Hue histogram
@@ -381,6 +414,7 @@ int main(int argc, char** argv) {
 		LineFinder lFinder;
 		MarkerFinder mFinder;
 		CircleFinder cFinder;
+		FaceFinder fFinder;
 
 		capture >> frame; // get a new frame from camera
 		// split 1 3-channel image into 3 1-channel images
@@ -394,15 +428,16 @@ int main(int argc, char** argv) {
 
 		cv::medianBlur(frameBitmap, frameBitmap, 5); // фильтруем шумы
 		cv::cvtColor(frame, grayFrame, CV_BGR2GRAY);
+		/////cv::equalizeHist(grayFrame, grayFrame);
 		frameBitmap = grayFrame;
 		//Apply a Gaussian Blur on the gray-level Frame
-		cv::GaussianBlur(grayFrame, grayFrame, cv::Size(9, 9), 2, 2);
+		cv::GaussianBlur(grayFrame, grayFrame, cv::Size(5, 5), 1.5, 1.5);
 
 		//Apply Canny Algorithm
 		cv::Canny(grayFrame, // gray-level source image
 				edges,          // output contours
-				50,              // low threshold
-				100, // high threshold// чем больше тем меньше помех. маркер на 250 -супер. Но остальное  -нужно контрастность/свет
+				100,              // low threshold
+				200, // high threshold// чем больше тем меньше помех. маркер на 250 -супер. Но остальное  -нужно контрастность/свет
 				3, false);             // aperture size
 		//End Canny Algorithm
 
@@ -413,16 +448,16 @@ int main(int argc, char** argv) {
 		//std::vector<cv::Vec2i> markers = mFinder.find(frameBitmap);
 		cv::GaussianBlur(edges, edges, cv::Size(5, 5), 1.5, 1.5);
 		//cv::medianBlur(edges, edges, 5); // фильтруем шумы
-		std::vector<cv::Vec3f> circles = cFinder.find(grayFrame /*grayFrame*/);
+		std::vector<cv::Vec3f> circles = cFinder.find(edges/*grayFrame*/);
 		//grayFrame=image;
 		std::vector<cv::Vec4i> lines = lFinder.find(edges);
-
+		fFinder.find(grayFrame);
 		cv::cvtColor(grayFrame, ResultFrame, CV_GRAY2BGR);
 		ResultFrame = frame;
 		mFinder.draw(ResultFrame);
 		lFinder.draw(ResultFrame);
 		cFinder.draw(ResultFrame);
-
+        fFinder.draw(ResultFrame);
 //		cv::imshow("Red Dots", frameBitmap);
 		cv::imshow("grayFrame", grayFrame);
 //		cv::imshow("Camera Preview", frame);
