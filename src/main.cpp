@@ -7,10 +7,24 @@
 
 #include <cv.h>
 #include <highgui.h>
+
+#define ArDrone20
+
+
+
+#ifdef ArDrone20
+// ArDrone 2.0
+#include "CHeli.h"
+	CHeli *heli;
+
+	CRawImage *himage;
+#define _imageWidth  640
+#define _imageHeight 360
+#endif
 //using namespace cv;
 //using namespace std;
 
-//#define PI 3.1415926535898
+#define PI 3.1415926535898
 
 //class B{    void MyPrint () {     }};
 //class B1 extends B{
@@ -310,16 +324,21 @@ public:
 		};
 	}
 	;
-	std::vector<cv::Rect> find( cv::Mat image) {
-		if ( loaded) face_cascade.detectMultiScale( image, faces, 1.1, 2, 0|CV_HAAR_SCALE_IMAGE, cv::Size(30, 30) );
+	std::vector<cv::Rect> find(cv::Mat image) {
+		if (loaded)
+			face_cascade.detectMultiScale(image, faces, 1.1, 2,
+					0 | CV_HAAR_SCALE_IMAGE, cv::Size(30, 30));
 		return faces;
 	}
 	void draw(/*cv::Mat &image, */cv::Mat &target, cv::Scalar color =
 			cv::Scalar(128, 128, 255), int size = 20) {
 		std::vector<cv::Rect>::const_iterator itc = faces.begin();
 		while (itc != faces.end()) {
-			cv::Point center( (*itc).x + (*itc).width*0.5, (*itc).y + (*itc).height*0.5 );
-		      ellipse( target, center, cv::Size( (*itc).width*0.5, (*itc).height*0.5), 0, 0, 360, color, 2, 8, 0 );
+			cv::Point center((*itc).x + (*itc).width * 0.5,
+					(*itc).y + (*itc).height * 0.5);
+			ellipse(target, center,
+					cv::Size((*itc).width * 0.5, (*itc).height * 0.5), 0, 0,
+					360, color, 2, 8, 0);
 			++itc;
 		}
 	}
@@ -341,7 +360,7 @@ public:
 		cv::medianBlur(image, image, 5);
 		cv::HoughCircles(image, circles, CV_HOUGH_GRADIENT, 2// accumulator resolution (size of the image / 2)
 				, image.rows / 15	// minimum distance between two circles
-				, 200 // Canny high threshold
+						, 200 // Canny high threshold
 				, 150 // minimum number of votes
 				, 20, 300 // min and max radius
 				);
@@ -368,8 +387,23 @@ public:
 //	    }
 	}
 };
+cv::Mat *image_from_data(uint8_t* data,int height,int width)
+{
+	IplImage *currframe;
+	cv::Mat *dst;
+
+  currframe = cvCreateImage(cvSize(height,width), IPL_DEPTH_8U, 3);
+  //dst = cvCreateImage(cvSize(320,240), IPL_DEPTH_8U, 3);
+
+  currframe->imageData = (char*)data;
+  dst=new cv::Mat(currframe,true);
+  //cvCvtColor(currframe, dst, CV_BGR2RGB);
+  cvReleaseImage(&currframe);
+  return dst;
+}
 
 int main(int argc, char** argv) {
+
 	cv::Mat image;
 	cv::Mat contours;
 	if (argc == 2) {
@@ -380,27 +414,28 @@ int main(int argc, char** argv) {
 		}
 		cv::cvtColor(image, image, CV_BGR2GRAY);
 	}
-	//cv::Mat imageROI= image(cv::Rect(110,260,35,40));
-	// Get the Hue histogram
-	//int minSat=65;
-	//ColorHistogram hc;
-	//cv::MatND colorhist=
-	//hc.getHueHistogram(imageROI,minSat);//
+
+#ifdef ArDrone20
+
+	heli = new CHeli(_imageWidth,_imageHeight);
+	himage = new CRawImage(_imageWidth,_imageHeight);
+#else
 	// Open the default camera
 	cv::VideoCapture capture(0);
 	// Check if we succeeded
 	if (!capture.isOpened()) {
 		std::cout << "Video capture failed, please check the camera."
-				<< std::endl;
+		<< std::endl;
 		return -1;
 	} else {
 		std::cout << "Video camera capture successful!" << std::endl;
 	}
+#endif
 	int Rmin = 100, Rmax = 255;
 	int Gmin = 50, Gmax = 255;
 	int Bmin = 50, Bmax = 255;
 	for (;;) {
-		cv::Mat frame, hsv, frameBitmap;
+		cv::Mat  hsv, frameBitmap;//frame,
 		cv::Mat grayFrame, ResultFrame;
 		cv::Mat gaussGrayFrame;
 		cv::Mat edges;
@@ -412,7 +447,22 @@ int main(int argc, char** argv) {
 		CircleFinder cFinder;
 		FaceFinder fFinder;
 
+#ifdef ArDrone20
+		//image capture
+		heli->renewImage(himage);
+		cv::Mat frame(himage->height,
+				himage->width,
+				CV_8UC3,
+				himage->data);
+		fprintf(stdout,"Angles %.2lf %.2lf %.2lf ",helidata.phi,helidata.psi,helidata.theta);
+		fprintf(stdout,"Speeds %.2lf %.2lf %.2lf ",helidata.vx,helidata.vy,helidata.vz);
+		fprintf(stdout,"Battery %.0lf\r ",helidata.battery);
+		//fprintf(stdout,"Largest blob %i %i\r",pos.x,pos.y);
+#else
+		cv::Mat  frame;
 		capture >> frame; // get a new frame from camera
+#endif
+
 		// split 1 3-channel image into 3 1-channel images
 		cv::split(frame, planes);
 		//planes[2]^=planes[2];
@@ -445,29 +495,32 @@ int main(int argc, char** argv) {
 		cv::GaussianBlur(edges, edges, cv::Size(5, 5), 1.5, 1.5);
 		/////////cv::medianBlur(edges, edges, 5); // фильтруем шумы
 		std::vector<cv::Vec3f> circles = cFinder.find(grayFrame);
-		std::vector<cv::Vec4i> lines   = lFinder.find(edges);
+		std::vector<cv::Vec4i> lines = lFinder.find(edges);
 		//std::vector<cv::Rect>  faces   = fFinder.find(grayFrame);
 		cv::cvtColor(grayFrame, ResultFrame, CV_GRAY2BGR);
 		ResultFrame = frame;
 		mFinder.draw(ResultFrame);
 		lFinder.draw(ResultFrame);
 		cFinder.draw(ResultFrame);
-        fFinder.draw(ResultFrame);
+		fFinder.draw(ResultFrame);
 //		cv::imshow("Red Dots", frameBitmap);
 		cv::imshow("grayFrame", grayFrame);
-//		cv::imshow("Camera Preview", frame);
+		cv::imshow("Camera Preview", frame);
 
 		cv::imshow("edges", edges);
 		cv::imshow("ResultFrame", ResultFrame);
-//		cv::Mat corners, dilated_corners;
-//		cv::preCornerDetect(image, corners, 3);
-//		// dilation with 3x3 rectangular structuring element
-//		cv::dilate(corners, dilated_corners, cv::Mat(), 1);
-//		cv::Mat corner_mask = corners == dilated_corners;
+		cv::Mat corners, dilated_corners;
+		cv::preCornerDetect(image, corners, 3);
+		// dilation with 3x3 rectangular structuring element
+		//cv::dilate(corners, dilated_corners, cv::Mat(), 1);
+		//cv::Mat corner_mask = corners == dilated_corners;
 //		cv::imshow("input file", image);
 		if (cv::waitKey(30) >= 0)
 			break;
 	}
-
+#ifdef ArDrone20
+	delete heli;
+#else
+#endif
 	return 0;
 }
