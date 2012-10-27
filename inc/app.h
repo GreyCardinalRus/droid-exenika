@@ -16,6 +16,21 @@
 #define VIDEO_WIDTH   320
 #define VIDEO_HEIGHT  240
 
+/**
+ * @enum LED_ANIMATION_IDS
+ * @brief Led animation values.
+ * See ardrone_at_set_led_animation function.
+ */
+//
+typedef enum LED_ANIMATION_IDS_
+{
+  #define LED_ANIMATION(NAME, ... ) NAME ,
+  #include <led_animation.h>
+  #undef LED_ANIMATION
+  NUM_LED_ANIMATION
+} LED_ANIMATION_IDS;
+
+
 //this structure keeps the drone telemetry data, x,y,z is empty
 typedef struct{
 	double x,y,z;
@@ -107,7 +122,7 @@ enum {
   MYKONOS_NAVDATA_DEMO_MASK   = 1 << 10, /*!< Navdata demo : (0) All navdata, (1) only navdata demo */
   MYKONOS_NAVDATA_BOOTSTRAP   = 1 << 11, /*!< Navdata bootstrap : (0) options sent in all or demo mode, (1) no navdata options sent */
   MYKONOS_MOTORS_BRUSHED      = 1 << 12, /*!< Motors brushed : (0) brushless, (1) brushed */
-  MYKONOS_COM_LOST_MASK   = 1 << 13, /*!< Communication Lost : (1) com problem, (0) Com is ok */
+  MYKONOS_COM_LOST_MASK		  = 1 << 13, /*!< Communication Lost : (1) com problem, (0) Com is ok */
   MYKONOS_GYROS_ZERO          = 1 << 14, /*!< Bit means that there's an hardware problem with gyrometers */
   MYKONOS_VBAT_LOW            = 1 << 15, /*!< VBat low : (1) too low, (0) Ok */
   MYKONOS_VBAT_HIGH           = 1 << 16, /*!< VBat high (US mad) : (1) too high, (0) Ok */

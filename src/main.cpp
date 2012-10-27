@@ -187,7 +187,7 @@ public:
 	//находим самое яркое пятно
 	void brightFinder(cv::Mat &image, int* x, int* y, int qadrant) const {
 		//Ищем самое яркое пятно
-		int min = 175;
+		int min = 100;
 		int minX = 0;
 		int minY = 0;
 
@@ -387,21 +387,13 @@ public:
 //	    }
 	}
 };
-cv::Mat *image_from_data(uint8_t* data,int height,int width)
-{
-	IplImage *currframe;
-	cv::Mat *dst;
 
-  currframe = cvCreateImage(cvSize(height,width), IPL_DEPTH_8U, 3);
-  //dst = cvCreateImage(cvSize(320,240), IPL_DEPTH_8U, 3);
-
-  currframe->imageData = (char*)data;
-  dst=new cv::Mat(currframe,true);
-  //cvCvtColor(currframe, dst, CV_BGR2RGB);
-  cvReleaseImage(&currframe);
-  return dst;
-}
-
+void PutText(cv::Mat target,int x,int y,const char* txt, int value, cv::Scalar color =
+		cv::Scalar(128, 128, 255),int size=20)
+{char str[11];
+sprintf(str, " %s %d ",txt, value);
+cv::putText(target, str, cv::Point(x,y), cv::FONT_HERSHEY_SIMPLEX, 1, color);
+	};
 int main(int argc, char** argv) {
 
 	cv::Mat image;
@@ -434,6 +426,7 @@ int main(int argc, char** argv) {
 	int Rmin = 100, Rmax = 255;
 	int Gmin = 50, Gmax = 255;
 	int Bmin = 50, Bmax = 255;
+	int MinVote = 100;
 	for (;;) {
 		cv::Mat  hsv, frameBitmap;//frame,
 		cv::Mat grayFrame, ResultFrame;
@@ -447,6 +440,7 @@ int main(int argc, char** argv) {
 		CircleFinder cFinder;
 		FaceFinder fFinder;
 
+
 #ifdef ArDrone20
 		//image capture
 		heli->renewImage(himage);
@@ -454,9 +448,9 @@ int main(int argc, char** argv) {
 				himage->width,
 				CV_8UC3,
 				himage->data);
-		fprintf(stdout,"Angles %.2lf %.2lf %.2lf ",helidata.phi,helidata.psi,helidata.theta);
-		fprintf(stdout,"Speeds %.2lf %.2lf %.2lf ",helidata.vx,helidata.vy,helidata.vz);
-		fprintf(stdout,"Battery %.0lf\r ",helidata.battery);
+		//fprintf(stdout,"Angles %.2lf %.2lf %.2lf ",helidata.phi,helidata.psi,helidata.theta);
+		//fprintf(stdout,"Speeds %.2lf %.2lf %.2lf ",helidata.vx,helidata.vy,helidata.vz);
+		//fprintf(stdout,"Battery %.0lf\r ",helidata.battery);
 		//fprintf(stdout,"Largest blob %i %i\r",pos.x,pos.y);
 #else
 		cv::Mat  frame;
@@ -482,20 +476,23 @@ int main(int argc, char** argv) {
 		//Apply Canny Algorithm
 		cv::Canny(grayFrame, // gray-level source image
 				edges,          // output contours
-				100,              // low threshold
-				200, // high threshold// чем больше тем меньше помех. маркер на 250 -супер. Но остальное  -нужно контрастность/свет
+				MinVote,              // low threshold
+				250, // high threshold// чем больше тем меньше помех. маркер на 250 -супер. Но остальное  -нужно контрастность/свет
 				3, false);             // aperture size
 		//End Canny Algorithm
 
-		lFinder.setLineLengthAndGap(100, 5);
-		lFinder.setMinVote(150);
 
 		//Detect lines
-		//std::vector<cv::Vec2i> markers = mFinder.find(frameBitmap);
+		//std::vector<cv::Vec2i> markers = mFinder.find(planes[0]);
 		cv::GaussianBlur(edges, edges, cv::Size(5, 5), 1.5, 1.5);
 		/////////cv::medianBlur(edges, edges, 5); // фильтруем шумы
-		std::vector<cv::Vec3f> circles = cFinder.find(grayFrame);
+		//std::vector<cv::Vec3f> circles = cFinder.find(grayFrame);
+		lFinder.setLineLengthAndGap(MinVote, 50);
+		lFinder.setMinVote(MinVote);
+
 		std::vector<cv::Vec4i> lines = lFinder.find(edges);
+		if (lines.size()>20&&MinVote<255) MinVote+=lines.size()-20;
+		if (lines.size()<5&&MinVote>5) MinVote-=5;
 		//std::vector<cv::Rect>  faces   = fFinder.find(grayFrame);
 		cv::cvtColor(grayFrame, ResultFrame, CV_GRAY2BGR);
 		ResultFrame = frame;
@@ -503,9 +500,14 @@ int main(int argc, char** argv) {
 		lFinder.draw(ResultFrame);
 		cFinder.draw(ResultFrame);
 		fFinder.draw(ResultFrame);
+		PutText(ResultFrame,50,50,"MinVote=",MinVote);
+#ifdef ArDrone20
+		PutText(ResultFrame,50,_imageHeight-10,"Compas=",helidata.psi);
+		PutText(ResultFrame,_imageWidth-250,_imageHeight-10,"Battery=",helidata.battery);
+#endif
 //		cv::imshow("Red Dots", frameBitmap);
-		cv::imshow("grayFrame", grayFrame);
-		cv::imshow("Camera Preview", frame);
+//		cv::imshow("grayFrame", grayFrame);
+//		cv::imshow("Camera Preview", frame);
 
 		cv::imshow("edges", edges);
 		cv::imshow("ResultFrame", ResultFrame);
@@ -514,7 +516,9 @@ int main(int argc, char** argv) {
 		// dilation with 3x3 rectangular structuring element
 		//cv::dilate(corners, dilated_corners, cv::Mat(), 1);
 		//cv::Mat corner_mask = corners == dilated_corners;
-//		cv::imshow("input file", image);
+		//cv::imshow("Blue", planes[0]);
+		//cv::imshow("Green", planes[1]);
+		//cv::imshow("red", planes[2]);
 		if (cv::waitKey(30) >= 0)
 			break;
 	}
