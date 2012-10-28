@@ -16,19 +16,19 @@
 #define VIDEO_WIDTH   320
 #define VIDEO_HEIGHT  240
 
-/**
- * @enum LED_ANIMATION_IDS
- * @brief Led animation values.
- * See ardrone_at_set_led_animation function.
- */
-//
-typedef enum LED_ANIMATION_IDS_
-{
-  #define LED_ANIMATION(NAME, ... ) NAME ,
-  #include <led_animation.h>
-  #undef LED_ANIMATION
-  NUM_LED_ANIMATION
-} LED_ANIMATION_IDS;
+///**
+// * @enum LED_ANIMATION_IDS
+// * @brief Led animation values.
+// * See ardrone_at_set_led_animation function.
+// */
+////
+//typedef enum LED_ANIMATION_IDS_
+//{
+//  #define LED_ANIMATION(NAME, ... ) NAME ,
+//  #include <led_animation.h>
+//  #undef LED_ANIMATION
+//  NUM_LED_ANIMATION
+//} LED_ANIMATION_IDS;
 
 
 //this structure keeps the drone telemetry data, x,y,z is empty
